@@ -30,6 +30,12 @@ func main() {
 	defer pool.Close()
 	log.Println("✅ Postgres connected")
 
+	// Применяем миграции
+	if err := db.RunMigrations(cfg.DatabaseURL, "file://migrations"); err != nil {
+		log.Fatalf("migrations error: %v", err)
+	}
+	log.Println("✅ Migrations applied")
+
 	// Подключаемся к Redis
 	redisClient, err := cache.NewClient(ctx, cfg.RedisURL)
 	if err != nil {
@@ -43,7 +49,7 @@ func main() {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
-	// Health check — первый эндпоинт, проверяем что сервер живой
+	// Health check
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprintln(w, "ok")
