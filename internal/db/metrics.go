@@ -52,3 +52,19 @@ func (r *MetricsRepository) SaveCoupling(ctx context.Context, repoPath string, p
 	}
 	return nil
 }
+
+// GetFileMetrics возвращает метрики по конкретному файлу
+func (r *MetricsRepository) GetFileMetrics(ctx context.Context, repoPath, filePath string) (*git.FileMetrics, error) {
+	m := &git.FileMetrics{}
+
+	err := r.pool.QueryRow(ctx, `
+		SELECT file_path, churn_rate, owner
+		FROM file_metrics
+		WHERE repo_path = $1 AND file_path = $2
+	`, repoPath, filePath).Scan(&m.FilePath, &m.ChurnRate, &m.Owner)
+	if err != nil {
+		return nil, fmt.Errorf("metrics not found for %s: %w", filePath, err)
+	}
+
+	return m, nil
+}
